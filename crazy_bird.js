@@ -90,6 +90,7 @@ export class CrazyBird extends Base_Scene {
      * This gives you a very small code sandbox for editing a simple scene, and for
      * experimenting with matrix transformations.
      */
+    
     set_colors() {
         // TODO:  Create a class member variable to store your cube's colors.
         // Hint:  You might need to create a member variable at somewhere to store the colors, using `this`.
@@ -97,15 +98,19 @@ export class CrazyBird extends Base_Scene {
     }
 
     make_control_panel() {
+        
         // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
         this.key_triggered_button("Change Colors", ["c"], this.set_colors);
         // Add a button for controlling the scene.
         this.key_triggered_button("Outline", ["o"], () => {
             // TODO:  Requirement 5b:  Set a flag here that will toggle your outline on and off
+            this.force = 0.6;
         });
         this.key_triggered_button("Sit still", ["m"], () => {
             // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
         });
+        this.v = 0;
+        this.x = 0
     }
 
     draw_box(context, program_state, model_transform) {
@@ -119,10 +124,17 @@ export class CrazyBird extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
-        let model_transform = Mat4.identity();
+        let model_transform = Mat4.identity().times(Mat4.translation(0,15,0));
+
+        let g = -0.015 + this.force;
+        this.v = Math.min(this.v + g,0.5);
+        this.x = this.x + this.v;
+        
+        model_transform = model_transform.times(Mat4.translation(0,this.x,0));
 
         // Example for drawing a cube, you can remove this line if needed
         this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
         // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+        this.force = 0;
     }
 }
