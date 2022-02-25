@@ -51,7 +51,10 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
+            'bird': new Cube(),
             'cube': new Cube(),
+            'pipe': new Cube(),
+            'pipe2': new Cube(),
             'outline': new Cube_Outline(),
         };
 
@@ -74,7 +77,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, -5, -50));
+            program_state.set_camera(Mat4.translation(5, -10, -30));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -112,7 +115,9 @@ export class CrazyBird extends Base_Scene {
             // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
         });
         this.v = 0;
-        this.x = 10;
+        this.x = 15;
+        this.model_transform_bird = Mat4.identity().times(Mat4.translation(0,this.x,0));
+        this.pipe_position = -30;
     }
 
     draw_box(context, program_state, model_transform) {
@@ -126,24 +131,40 @@ export class CrazyBird extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
-        let model_transform = Mat4.identity().times(Mat4.translation(0,15,0));
+        let model_transform_bird = Mat4.identity().times(Mat4.translation(0,5,0));
+        let model_transform_pipe = Mat4.identity().times(Mat4.scale(1,8,1)).times(Mat4.translation(0,0.5,-30));
+        let model_transform_pipe2 = Mat4.identity().times(Mat4.scale(1,4,1)).times(Mat4.translation(0,6,-30));
+        let model_transform_pipe3 = Mat4.identity().times(Mat4.scale(1,3,1)).times(Mat4.translation(0,0.5,-60));
+        let model_transform_pipe4 = Mat4.identity().times(Mat4.scale(1,7,1)).times(Mat4.translation(0,3,-60));
 
         let g = -0.015 + this.force;
         this.v = Math.min(this.v + g,0.5);
-        this.x = this.x + this.v;
+        this.x = Math.max(this.x + this.v,-5.5);
         
-        model_transform = model_transform.times(Mat4.translation(0,this.x,0));
+        model_transform_bird = model_transform_bird.times(Mat4.translation(0,this.x,0));
 
-        let floor_transform = Mat4.identity().times(Mat4.scale(20, 0.5, 20));
+        // Example for drawing a cube, you can remove this line if needed
+        
+        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+        this.force = 0;
+        this.pipe_position = this.pipe_position+0.1;
+        model_transform_pipe = model_transform_pipe.times(Mat4.translation(0,0,this.pipe_position));
+        model_transform_pipe2 = model_transform_pipe2.times(Mat4.translation(0,0,this.pipe_position));
+        model_transform_pipe3 = model_transform_pipe3.times(Mat4.translation(0,0,this.pipe_position));
+        model_transform_pipe4 = model_transform_pipe4.times(Mat4.translation(0,0,this.pipe_position));
+
+        this.shapes.pipe.draw(context, program_state, model_transform_pipe, this.materials.plastic.override({color:blue}));
+        this.shapes.pipe.draw(context, program_state, model_transform_pipe2, this.materials.plastic.override({color:blue}));
+        this.shapes.pipe.draw(context, program_state, model_transform_pipe3, this.materials.plastic.override({color:blue}));
+        this.shapes.pipe.draw(context, program_state, model_transform_pipe4, this.materials.plastic.override({color:blue}));
+        
+        let floor_transform = Mat4.identity().times(Mat4.scale(20, 0.5, 50)).times(Mat4.translation(0, -4, 0));
         this.shapes.cube.draw(context, program_state, floor_transform, this.materials.plasticlose);
-
-        if(this.x <= 0.0){
-            this.shapes.cube.draw(context, program_state, Mat4.identity(), this.materials.plastic.override({color:blue}));
-        }else{
+        
             // Example for drawing a cube, you can remove this line if needed
-            this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
+        this.shapes.bird.draw(context, program_state, model_transform_bird, this.materials.plastic.override({color:blue}));
             // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
-            this.force = 0;
-        }
+        this.force = 0;
+        
     }
 }
