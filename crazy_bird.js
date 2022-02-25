@@ -74,7 +74,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(5, -10, -30));
+            program_state.set_camera(Mat4.translation(0, -5, -50));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -134,8 +134,11 @@ export class CrazyBird extends Base_Scene {
         
         model_transform = model_transform.times(Mat4.translation(0,this.x,0));
 
+        let floor_transform = Mat4.identity().times(Mat4.scale(20, 0.5, 20));
+        this.shapes.cube.draw(context, program_state, floor_transform, this.materials.plasticlose);
+
         if(this.x <= 0.0){
-            this.shapes.cube.draw(context, program_state, Mat4.identity(), this.materials.plasticlose);
+            this.shapes.cube.draw(context, program_state, Mat4.identity(), this.materials.plastic.override({color:blue}));
         }else{
             // Example for drawing a cube, you can remove this line if needed
             this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
