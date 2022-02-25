@@ -59,6 +59,8 @@ class Base_Scene extends Scene {
         this.materials = {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            plasticlose: new Material(new defs.Phong_Shader(),
+                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
         };
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
@@ -110,7 +112,7 @@ export class CrazyBird extends Base_Scene {
             // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
         });
         this.v = 0;
-        this.x = 0
+        this.x = 10;
     }
 
     draw_box(context, program_state, model_transform) {
@@ -132,9 +134,13 @@ export class CrazyBird extends Base_Scene {
         
         model_transform = model_transform.times(Mat4.translation(0,this.x,0));
 
-        // Example for drawing a cube, you can remove this line if needed
-        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
-        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
-        this.force = 0;
+        if(this.x <= 0.0){
+            this.shapes.cube.draw(context, program_state, Mat4.identity(), this.materials.plasticlose);
+        }else{
+            // Example for drawing a cube, you can remove this line if needed
+            this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
+            // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+            this.force = 0;
+        }
     }
 }
