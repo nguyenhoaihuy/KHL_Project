@@ -49,6 +49,12 @@ class Base_Scene extends Scene {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
         this.hover = this.swarm = false;
+
+        //keep track of the score (number of pipes passed)
+        this.score = 0;
+        this.lost = false;
+        this.prevLocation;
+
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
             'bird': new defs.Subdivision_Sphere(4),
@@ -164,22 +170,56 @@ export class CrazyBird extends Base_Scene {
 
         let model_transform_bird = Mat4.identity().times(Mat4.translation(0,5,10));
 
-        let g = -0.015 + this.force;
-        this.v = Math.min(this.v + g,0.5);
-        this.x = Math.max(this.x + this.v,-7.5);
         
-        model_transform_bird = model_transform_bird.times(Mat4.translation(0,this.x,0));
         
+        if (!this.lost){
+            model_transform_bird = model_transform_bird.times(Mat4.translation(0,this.x,0));
+            let g = -0.015 + this.force;
+            this.v = Math.min(this.v + g,0.5);
+            this.x = Math.max(this.x + this.v,-7.5);
+            this.prevLocation = model_transform_bird;
+        }else{
+            //model_transform_bird = model_transform_bird.times(Mat4.translation(0,-7.5,0));
+            model_transform_bird = this.prevLocation;
+
+        }
+
         // Draw pipes dynamically
         this.force = 0;
-        const pipe_position = 0.1;
+        let pipe_position = 0.1;
+
+        if (this.lost){
+            pipe_position = 0;
+        }
         for (let i=0; i < this.pipes.length; i++){
             this.pipes[i].Matrix = this.pipes[i].Matrix.times(Mat4.translation(0,0,pipe_position));
             this.draw_box(context, program_state,this.pipes[i].Matrix,this.pipes[i].height);
+
+            //check if the bird has hit the pipe
+            let pipe_height = this.pipes[i].height; //number of 2by2by2 cubes in the pipe, measuring the
+            //top of the gap //gap is 4 cubes
+
+            let gap_bottom = this.pipes[i].Matrix[1][3] + 2*(this.pipes[i].height-4);
+            let gap_top = this.pipes[i].Matrix[1][3] + 2*(this.pipes[i].height);
+
+            let bird_bottom = this.x - 1;
+            let bird_top = this.x + 1;
+            let pipe_z = this.pipes[i].Matrix[2][3];
+
+            if (pipe_z > 8.0 && pipe_z < 10.0){
+                if ((bird_bottom < gap_bottom) || (bird_top > gap_top+0.25) ){
+                    console.log("you lose");
+                    this.lost = true;
+                }else if (!this.lost){
+                    this.score += 1;
+                    console.log(this.score);
+                }
+            }
+
         }
 
         // Check if need to add new pipe matrix
-        console.log(this.pipes[this.pipes.length-1])
+        //console.log(this.pipes[this.pipes.length-1])
         if (this.pipes[this.pipes.length-1].Matrix[2][3] > -20){
             let new_matrix = {Matrix:Mat4.identity().times(Mat4.translation(0,-2.5,-40)),height:this.randomNumber(4,12)};
             this.pipes.push(new_matrix);
@@ -194,11 +234,24 @@ export class CrazyBird extends Base_Scene {
         let floor_transform = Mat4.identity().times(Mat4.translation(-12, -4, 0)).times(Mat4.scale(50, 0.5, 100));
         this.shapes.cube.draw(context, program_state, floor_transform, this.materials.plasticlose);
         
+        //if bird hits the floor or hits a pillar, game over
+        //floor has y value of -7.5, sphere has radius of 1
+        if (this.x <= -7.5){
+            console.log("you lose");
+            this.lost = true;
+            this.prevLocation = model_transform_bird;
+        }
+            //this.shapes.bird.draw(context, program_state, model_transform_bird, this.materials.plastic.override({color:blue}));
+            //this.shapes.bird.draw(context, program_state, model_transform_bird.times(Mat4.translation(0, 1, 0)), this.materials.plastic.override({color:blue}));
+       
+
+        
         // draw bird
         this.shapes.bird.draw(context, program_state, model_transform_bird, this.materials.plastic.override({color:blue}));
         
         // reset force from keyboard press
         this.force = 0;
+        
         
     }
 }
