@@ -1,7 +1,7 @@
 import {defs, tiny} from './examples/common.js';
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
 class Cube extends Shape {
@@ -51,11 +51,12 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
-            'bird': new Cube(),
-            'cube': new Cube(),
+            'bird': new defs.Subdivision_Sphere(4),
+            'cube': new defs.Cylindrical_Tube(2,3),
             'pipe': new Cube(),
             'pipe2': new Cube(),
             'outline': new Cube_Outline(),
+            'sphere4': new defs.Subdivision_Sphere(4)
         };
 
         // *** Materials
@@ -67,6 +68,11 @@ class Base_Scene extends Scene {
         };
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
+        this.initial_camera_location = Mat4.translation(5, -15, -50).times(Mat4.rotation(-Math.PI/2, 0, 1, 0)) ;
+        this.third_person_camera = Mat4.translation(5, -15, -50);
+        this.change_view = false;
+        this.pipes = [{Matrix:Mat4.identity().times(Mat4.translation(0,-2.5,-20)),height:this.randomNumber(4,12)}];
+        
     }
 
     display(context, program_state) {
@@ -77,7 +83,8 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(5, -10, -30));
+            program_state.set_camera(this.initial_camera_location);
+            
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -86,6 +93,12 @@ class Base_Scene extends Scene {
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
     }
+
+    randomNumber(min, max) { 
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    } 
 }
 
 export class CrazyBird extends Base_Scene {
@@ -104,66 +117,87 @@ export class CrazyBird extends Base_Scene {
 
     make_control_panel() {
         
-        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("Change Colors", ["c"], this.set_colors);
-        // Add a button for controlling the scene.
-        this.key_triggered_button("Outline", ["o"], () => {
-            // TODO:  Requirement 5b:  Set a flag here that will toggle your outline on and off
+        this.key_triggered_button("Jump", ["b"], () => {
             this.force = 0.6;
         });
-        this.key_triggered_button("Sit still", ["m"], () => {
-            // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
+        this.key_triggered_button("Side view", ["t"], () => {
+            this.change_view = !this.change_view;
         });
         this.v = 0;
         this.x = 15;
-        this.model_transform_bird = Mat4.identity().times(Mat4.translation(0,this.x,0));
         this.pipe_position = -30;
     }
 
-    draw_box(context, program_state, model_transform) {
-        // TODO:  Helper function for requirement 3 (see hint).
-        //        This should make changes to the model_transform matrix, draw the next box, and return the newest model_transform.
-        // Hint:  You can add more parameters for this function, like the desired color, index of the box, etc.
+    draw_box(context, program_state, model_transform, height) {
+        
+        const green = hex_color("#57c94f");
+        const gap = 4;
+        const height_limit = 20;
 
-        return model_transform;
+        // draw bottom pipe
+        for (let i=1; i<height; i++){
+            this.shapes.pipe.draw(context, program_state, model_transform, this.materials.plastic.override({color:green}))
+            model_transform = model_transform.times(Mat4.translation(0,2,0));
+        }
+
+        //gap between 2 pipe
+        model_transform = model_transform.times(Mat4.translation(0,gap*2,0));
+
+        // draw top pipe
+        let top_count = height_limit - height - gap;
+        for (let i=1; i<top_count; i++){
+            this.shapes.pipe.draw(context, program_state, model_transform, this.materials.plastic.override({color:green}))
+            model_transform = model_transform.times(Mat4.translation(0,2,0));
+        }
     }
 
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
-        let model_transform_bird = Mat4.identity().times(Mat4.translation(0,5,0));
-        let model_transform_pipe = Mat4.identity().times(Mat4.scale(1,8,1)).times(Mat4.translation(0,0.5,-30));
-        let model_transform_pipe2 = Mat4.identity().times(Mat4.scale(1,4,1)).times(Mat4.translation(0,6,-30));
-        let model_transform_pipe3 = Mat4.identity().times(Mat4.scale(1,3,1)).times(Mat4.translation(0,0.5,-60));
-        let model_transform_pipe4 = Mat4.identity().times(Mat4.scale(1,7,1)).times(Mat4.translation(0,3,-60));
+        const green = hex_color("#57c94f");
+
+        if (this.change_view){
+            program_state.set_camera(this.third_person_camera);
+        } else {
+            program_state.set_camera(this.initial_camera_location);
+        }
+
+        let model_transform_bird = Mat4.identity().times(Mat4.translation(0,5,10));
 
         let g = -0.015 + this.force;
         this.v = Math.min(this.v + g,0.5);
-        this.x = Math.max(this.x + this.v,-5.5);
+        this.x = Math.max(this.x + this.v,-7.5);
         
         model_transform_bird = model_transform_bird.times(Mat4.translation(0,this.x,0));
-
-        // Example for drawing a cube, you can remove this line if needed
         
-        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+        // Draw pipes dynamically
         this.force = 0;
-        this.pipe_position = this.pipe_position+0.1;
-        model_transform_pipe = model_transform_pipe.times(Mat4.translation(0,0,this.pipe_position));
-        model_transform_pipe2 = model_transform_pipe2.times(Mat4.translation(0,0,this.pipe_position));
-        model_transform_pipe3 = model_transform_pipe3.times(Mat4.translation(0,0,this.pipe_position));
-        model_transform_pipe4 = model_transform_pipe4.times(Mat4.translation(0,0,this.pipe_position));
+        const pipe_position = 0.1;
+        for (let i=0; i < this.pipes.length; i++){
+            this.pipes[i].Matrix = this.pipes[i].Matrix.times(Mat4.translation(0,0,pipe_position));
+            this.draw_box(context, program_state,this.pipes[i].Matrix,this.pipes[i].height);
+        }
 
-        this.shapes.pipe.draw(context, program_state, model_transform_pipe, this.materials.plastic.override({color:blue}));
-        this.shapes.pipe.draw(context, program_state, model_transform_pipe2, this.materials.plastic.override({color:blue}));
-        this.shapes.pipe.draw(context, program_state, model_transform_pipe3, this.materials.plastic.override({color:blue}));
-        this.shapes.pipe.draw(context, program_state, model_transform_pipe4, this.materials.plastic.override({color:blue}));
+        // Check if need to add new pipe matrix
+        console.log(this.pipes[this.pipes.length-1])
+        if (this.pipes[this.pipes.length-1].Matrix[2][3] > -20){
+            let new_matrix = {Matrix:Mat4.identity().times(Mat4.translation(0,-2.5,-40)),height:this.randomNumber(4,12)};
+            this.pipes.push(new_matrix);
+        }
+
+        // Check if need to remove the first matrix in the pipes array
+        if (this.pipes.length > 0 && this.pipes[0].Matrix[2][3] > 50){
+            this.pipes.shift();
+        }
         
-        let floor_transform = Mat4.identity().times(Mat4.scale(20, 0.5, 50)).times(Mat4.translation(0, -4, 0));
+        // draw floor
+        let floor_transform = Mat4.identity().times(Mat4.translation(-12, -4, 0)).times(Mat4.scale(50, 0.5, 100));
         this.shapes.cube.draw(context, program_state, floor_transform, this.materials.plasticlose);
         
-            // Example for drawing a cube, you can remove this line if needed
+        // draw bird
         this.shapes.bird.draw(context, program_state, model_transform_bird, this.materials.plastic.override({color:blue}));
-            // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+        
+        // reset force from keyboard press
         this.force = 0;
         
     }
