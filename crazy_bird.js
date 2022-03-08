@@ -206,7 +206,7 @@ export class CrazyBird extends Base_Scene {
             let bird_top = this.x + 1;
             let pipe_z = this.pipes[i].Matrix[2][3];
 
-            if (pipe_z > 8.0 && pipe_z < 10.0){
+            if (pipe_z > 8.0 && pipe_z < 12.0){
                 if ((bird_bottom < gap_bottom) || (bird_top > gap_top+0.25) ){
                     console.log("you lose");
                     this.lost = true;
