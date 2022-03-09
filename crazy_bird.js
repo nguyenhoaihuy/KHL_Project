@@ -69,15 +69,15 @@ class Base_Scene extends Scene {
 
         // *** Materials
         this.materials = {
-            flame: new Material(new Textured_Phong(), {
+            flame: new Material(new defs.Fake_Bump_Map(), {
                 //color: hex_color("#ff3939"),
-                ambient: 1, diffusivity: 0.1, specularity: 0.1,
-                texture: new Texture("assets/hell.jpg")
+                ambient: 1, diffusivity: 0.1, specularity: 1.0,
+                texture: new Texture("assets/hell.jpg", "LINEAR_MIPMAP_LINEAR")
             }),
             texture_plastic: new Material(new Textured_Phong(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#50a127"), texture: new Texture("assets/green_texture.jpg")}),
-            background: new Material(new Texture_Scroll_X(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#f5a631"), texture: new Texture("assets/green_texture.jpg")}),
+            //background: new Material(new Texture_Scroll_X(),
+             //   {ambient: .4, diffusivity: .6, color: hex_color("#f5a631"), texture: new Texture("assets/green_texture.jpg")}),
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: 0.7, diffusivity: 1.0, specularity: 1.0, color: hex_color("#8c0b0b")}),
             bird: new Material(new defs.Phong_Shader(),
@@ -92,7 +92,6 @@ class Base_Scene extends Scene {
             theme_song: new Audio ("assets/guitar_loop.wav"),
         }
         this.playing = true;
-
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
         this.initial_camera_location = Mat4.translation(5, -15, -50).times(Mat4.rotation(-Math.PI/2, 0, 1, 0)) ;
@@ -281,6 +280,7 @@ export class CrazyBird extends Base_Scene {
 
     }
 }
+
 
 
 
