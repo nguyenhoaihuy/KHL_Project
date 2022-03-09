@@ -340,8 +340,13 @@ export class CrazyBird extends Base_Scene {
         // reset force from keyboard press
         this.force = 0;
 
-        const funny_orbit = Mat4.identity().times(Mat4.translation(0, 34, 10)).times(Mat4.scale(10,10,10));
+        let funny_orbit = Mat4.identity().times(Mat4.translation(0, 34, 10)).times(Mat4.scale(10,10,10));
         //this.shapes.cube.draw(context, program_state, funny_orbit, this.grey);
+
+        if (this.change_view){
+            funny_orbit = Mat4.identity().times(Mat4.translation(-20, 25, 10)).times(Mat4.scale(10,10,10));
+            funny_orbit = funny_orbit.times(Mat4.rotation(-Math.PI/2, 0,1,0));
+        }
 
         //draw the score
 
