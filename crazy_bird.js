@@ -254,7 +254,7 @@ export class CrazyBird extends Base_Scene {
         }
 
         // draw floor
-        let floor_transform = Mat4.identity().times(Mat4.translation(-12, -4, 0)).times(Mat4.scale(50, 0.5, 100));
+        let floor_transform = Mat4.identity().times(Mat4.translation(-12, -4, 0)).times(Mat4.scale(50, 0.5, 200));
         this.shapes.cube.draw(context, program_state, floor_transform, this.materials.flame);
 
         //if bird hits the floor or hits a pillar, game over
