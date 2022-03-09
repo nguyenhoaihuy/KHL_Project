@@ -1,8 +1,52 @@
 import {defs, tiny} from './examples/common.js';
 
+
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
+
+
+export class Text_Line extends Shape {                           // **Text_Line** embeds text in the 3D world, using a crude texture
+                                                                 // method.  This Shape is made of a horizontal arrangement of quads.
+                                                                 // Each is textured over with images of ASCII characters, spelling
+                                                                 // out a string.  Usage:  Instantiate the Shape with the desired
+                                                                 // character line width.  Then assign it a single-line string by calling
+                                                                 // set_string("your string") on it. Draw the shape on a material
+                                                                 // with full ambient weight, and text.png assigned as its texture
+                                                                 // file.  For multi-line strings, repeat this process and draw with
+                                                                 // a different matrix.
+    constructor(max_size) {
+        super("position", "normal", "texture_coord");
+        this.max_size = max_size;
+        var object_transform = Mat4.identity();
+        for (var i = 0; i < max_size; i++) {                                       // Each quad is a separate Square instance:
+            defs.Square.insert_transformed_copy_into(this, [], object_transform);
+            object_transform.post_multiply(Mat4.translation(1.5, 0, 0));
+        }
+    }
+
+    set_string(line, context) {           // set_string():  Call this to overwrite the texture coordinates buffer with new
+        // values per quad, which enclose each of the string's characters.
+        this.arrays.texture_coord = [];
+        for (var i = 0; i < this.max_size; i++) {
+            var row = Math.floor((i < line.length ? line.charCodeAt(i) : ' '.charCodeAt()) / 16),
+                col = Math.floor((i < line.length ? line.charCodeAt(i) : ' '.charCodeAt()) % 16);
+
+            var skip = 3, size = 32, sizefloor = size - skip;
+            var dim = size * 16,
+                left = (col * size + skip) / dim, top = (row * size + skip) / dim,
+                right = (col * size + sizefloor) / dim, bottom = (row * size + sizefloor + 5) / dim;
+
+            this.arrays.texture_coord.push(...Vector.cast([left, 1 - bottom], [right, 1 - bottom],
+                [left, 1 - top], [right, 1 - top]));
+        }
+        if (!this.existing) {
+            this.copy_onto_graphics_card(context);
+            this.existing = true;
+        } else
+            this.copy_onto_graphics_card(context, ["texture_coord"], false);
+    }
+}
 
 const {Textured_Phong} = defs
 class Cube extends Shape {
@@ -64,9 +108,11 @@ class Base_Scene extends Scene {
             'pipe': new Cube(),
             'pipe2': new Cube(),
             'outline': new Cube_Outline(),
-            'sphere4': new defs.Subdivision_Sphere(4)
+            'sphere4': new defs.Subdivision_Sphere(4),
+            'text': new Text_Line(35)
         };
 
+        
         // *** Materials
         this.materials = {
             flame: new Material(new Textured_Phong(), {
@@ -86,7 +132,24 @@ class Base_Scene extends Scene {
             //   {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
             plastic_close: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            plastic: new Material(new defs.Phong_Shader(),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#8c0b0b")}),
         };
+
+        const phong = new defs.Phong_Shader();
+        const texture = new defs.Textured_Phong(1);
+
+        this.grey = new Material(phong, {
+            color: color(.5, .5, .5, 1), ambient: 1,
+            diffusivity: 0, specularity: 0, smoothness: 10, 
+        })
+
+        // To show text you need a Material like this one:
+        this.text_image = new Material(texture, {
+            ambient: 1, diffusivity: 0, specularity: 0,
+            texture: new Texture("assets/text.png")
+        });
+
 
         this.sounds = {
             theme_song: new Audio ("assets/guitar_loop.wav"),
@@ -278,7 +341,32 @@ export class CrazyBird extends Base_Scene {
         // reset force from keyboard press
         this.force = 0;
 
+        const funny_orbit = Mat4.identity().times(Mat4.translation(0, 34, 10)).times(Mat4.scale(10,10,10));
+        //this.shapes.cube.draw(context, program_state, funny_orbit, this.grey);
 
+        //draw the score
+
+        let strings = ["Score: " + this.score];
+
+        // Sample the "strings" array and draw them onto a cube.
+        for (let idx = 0; idx < 1; idx++){
+            for (let jdx = 0; jdx < 1; jdx++) {             // Find the matrix for a basis located along one of the cube's sides:
+                let cube_side = Mat4.rotation(idx == 0 ? Math.PI / 2 : 0, 1, 0, 0)
+                    .times(Mat4.rotation(Math.PI * jdx - (idx == 1 ? Math.PI / 2 : 0), 0, 1, 0))
+                    .times(Mat4.translation(-.9, .9, 1.01));
+
+                const multi_line_string = strings[2 * idx + jdx].split('\n');
+                // Draw a Text_String for every line in our string, up to 30 lines:
+                for (let line of multi_line_string.slice(0, 30)) {             // Assign the string to Text_String, and then draw it.
+                    this.shapes.text.set_string(line, context.context);
+                    //this.shapes.text.draw(context, program_state, funny_orbit.times(cube_side)
+                        //.times(Mat4.scale(.03, .03, .03)), this.text_image);
+                    this.shapes.text.draw(context, program_state, funny_orbit.times(Mat4.scale(.1, .1, .1)).times(Mat4.rotation(Math.PI/2, 0,1,0)), this.text_image);
+                    // Move our basis down a line.
+                    cube_side.post_multiply(Mat4.translation(0, -.06, 0));
+                }
+            }
+        }
     }
 }
 
