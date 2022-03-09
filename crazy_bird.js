@@ -58,6 +58,7 @@ class Base_Scene extends Scene {
 
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
+            'square':new defs.Square(),
             'bird': new defs.Subdivision_Sphere(4),
             'cube': new defs.Cylindrical_Tube(2,3),
             'pipe': new Cube(),
@@ -75,6 +76,8 @@ class Base_Scene extends Scene {
             }),
             texture_plastic: new Material(new Textured_Phong(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#50a127"), texture: new Texture("assets/green_texture.jpg")}),
+            background: new Material(new Texture_Scroll_X(),
+                {ambient: .4, diffusivity: .6, color: hex_color("#f5a631"), texture: new Texture("assets/green_texture.jpg")}),
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: 0.7, diffusivity: 1.0, specularity: 1.0, color: hex_color("#8c0b0b")}),
             bird: new Material(new defs.Phong_Shader(),
@@ -84,6 +87,12 @@ class Base_Scene extends Scene {
             plastic_close: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
         };
+
+        this.sounds = {
+            theme_song: new Audio ("assets/guitar_loop.wav"),
+        }
+        this.playing = true;
+
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
         this.initial_camera_location = Mat4.translation(5, -15, -50).times(Mat4.rotation(-Math.PI/2, 0, 1, 0)) ;
@@ -110,6 +119,9 @@ class Base_Scene extends Scene {
         // *** Lights: *** Values of vector or point lights.
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+
+
+
     }
 
     randomNumber(min, max) {
@@ -260,6 +272,8 @@ export class CrazyBird extends Base_Scene {
 
         // draw bird
         this.shapes.bird.draw(context, program_state, model_transform_bird, this.materials.bird);
+
+        // draw background
 
         // reset force from keyboard press
         this.force = 0;
