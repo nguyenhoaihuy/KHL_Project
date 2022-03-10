@@ -10,7 +10,7 @@ What to expect:
 motion based flying game with obstacles
 ## How to run the game
 
-After downloading the zip, simply open up index.html after setting up a server, by running host.bat (Windows) / host.command (MAC) file
+After downloading the zip, simply open up index.html after setting up a server which you can do by running host.bat (Windows) / host.command (MAC) file
 or using an IDE like Webstorm that does this for you
 
 ## What topics learnt in the course are used and how? 
